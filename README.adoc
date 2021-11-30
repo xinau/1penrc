@@ -1,0 +1,63 @@
+= 1PENRC
+:source-highlighter: rouge
+
+1penrc - helps to export 1Password items as environment variables.
+
+WARNING: This software is still in alpha. Bugs and breaking changes might occur. Use at your own risk.
+
+== INSTALLATION
+
+Atm. no binaries are provided and manual compilation and installation is required.
+To compile and install 1penrc manually Git and a recent version of the Go Toolchain is needed.
+
+[source,bash]
+----
+git clone https://github.com/xinau/1penrc.git
+cd 1penrc
+go build -o 1penrc ./cmd/1penrc
+sudo mv 1penrc /usr/local/bin
+----
+
+== PREREQUISITE
+
+1penrc uses the link:https://support.1password.com/command-line-getting-started/[1Password CLI] to interact with
+1Password.
+Therefore, it needs to be installed and available inside the users _$PATH_.
+
+== USAGE
+
+To export 1Password items as environment variables a configuration file defining an environment is needed.
+Each environment may define multiple item blocks, these specify how variables are exported from a 1Password item.
+
+The following example uses a configuration file which defines an environment of the name _example.com_.
+This environment has an item block configured, that exports a variable _API_TOKEN_ using the value of the field
+_api_token_ on the 1Password item _012345_.
+
+[source,hcl]
+----
+env "example.com" {
+  item "static" "my" "0123456789" {
+    mapping = {
+      API_TOKEN = "api_token"
+    }
+  }
+}
+----
+
+The variables can then be sourced by referring to the environment by its name.
+I.e.
+
+[source,bash]
+----
+eval $(1penrc -c ./config.hcl example.com)
+env | grep API_TOKEN
+----
+
+For more information take a look at the manpages link:docs/man/1penrc.1.adoc[1penrc(1)] and
+link:docs/man/1penrc.5.adoc[1penrc(5)].
+
+== DISCLAIMER
+
+As noted above this software is still in its early stages and breaking changes to behaviour might occur.
+This software is build to ease the process of exporting 1Password item fields as environment
+variables to be consumed by other tools on the CLI and as of now nothing else.
