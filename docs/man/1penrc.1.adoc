@@ -1,0 +1,49 @@
+= 1PENRC(1)
+Felix Ehrenpfort
+:doctype: manpage
+:source-highlighter: rouge
+
+== NAME
+
+1penrc - helps to export 1Password items as environment variables.
+
+== SYNOPSIS
+
+*1penrc* [*-c*=_CONFIG_FILE_]... _ENVIRONMENT_`
+
+== DESCRIPTION
+
+1penrc is a helper program that makes it easier to export 1Password items as environment variables.
+It uses a configuration file to declare how an items fields are being exported and which items belong to
+the same _environment_ and should be exported together.
+This allows users to declare these items once and export their fields as ready to use variables by referring only
+to an _environment_ on the cli.
+The output from 1penrc is than imported using the shell builtins _eval_ or _source_ similar to _op signin_.
+
+== OPTIONS
+
+*-c*=_CONFIG_FILE_::
+Use alternate configuration file instead of _~/.config/1penrc.hcl_.
+
+== FILES
+
+_~/.config/1penrc.hcl_::
+Default configuration file. See *1penrc(5)* for more details.
+
+== EXAMPLE
+
+The following shows how to export variables of an environment named _example.com_ declared in an alternate configuration
+file.
+
+[source,bash]
+----
+source <(1penrc -c ./config.hcl example.com)
+----
+
+== BUGS
+
+Bugs are tracked and can be reported at https://github.com/xinau/1penrc/issues.
+
+== SEE ALSO
+
+*1penrc(5)*
