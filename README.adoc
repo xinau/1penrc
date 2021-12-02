@@ -56,6 +56,14 @@ env | grep API_TOKEN
 For more information take a look at the manpages link:docs/man/1penrc.1.adoc[1penrc(1)] and
 link:docs/man/1penrc.5.adoc[1penrc(5)].
 
+== ROADMAP
+
+In the future 1penrc will hopefully include the following additions
+
+* An AWS supplier that uses access and secret keys as well as TOTP tokens form to get a session token and assume roles.
+* A File supplier that downloads documents from 1Password and exports the download path as variable.
+* The addition of a _--clean_ argument or command that removes previously set environment variables.
+
 == DISCLAIMER
 
 As noted above this software is still in its early stages and breaking changes to behaviour might occur.
