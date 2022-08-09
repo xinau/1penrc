@@ -1,5 +1,5 @@
 module github.com/xinau/1penrc
 
-go 1.16
+go 1.18
 
-require github.com/hashicorp/hcl/v2 v2.10.1
+require gopkg.in/yaml.v2 v2.4.0

@@ -4,109 +4,98 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
+	"log"
 	"os"
 	"path/filepath"
-	"text/template"
 
 	"github.com/xinau/1penrc/internal/config"
+	"github.com/xinau/1penrc/internal/op"
+	"github.com/xinau/1penrc/internal/provider"
+	"github.com/xinau/1penrc/internal/provider/secret"
+	"github.com/xinau/1penrc/internal/provider/value"
 )
 
 var (
-	MissingEnvironmentArgError = errors.New("missing required environment argument")
+	configF = flag.String(
+		"config",
+		filepath.Join(MustUserConfigDir(), "1penrc", "config.yaml"),
+		"configuration file to load",
+	)
 )
 
-type Command struct {
-	fs *flag.FlagSet
+var (
+	EnvironmentNotFoundError = errors.New("couldn't find environment")
+)
 
-	ConfigFile  string
-	Environment string
-}
+var (
+	ShellVariableExportTemplate = template.Must(template.New("").Parse(`
+{{- range $key, $val := . -}}
+export {{ $key }}='{{ $val }}'
+{{ end -}}
+`))
+)
 
-func NewCommand() *Command {
-	cmd := &Command{
-		fs: flag.NewFlagSet("", flag.ContinueOnError),
-	}
-	cmd.fs.Usage = func() {
-		fmt.Fprintf(cmd.fs.Output(), "Usage of %s [flags] environment\n", os.Args[0])
-		cmd.fs.PrintDefaults()
-	}
-	cmd.fs.StringVar(&cmd.ConfigFile, "config", "", "Location of config file defining environments")
-
-	return cmd
-}
-
-func (c *Command) GetConfigFile() (string, error) {
-	if c.ConfigFile != "" {
-		return c.ConfigFile, nil
-	}
-
+func MustUserConfigDir() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-
-	return filepath.Join(dir, "1penrc.hcl"), nil
+	return dir
 }
 
-func (c *Command) Parse(args []string) error {
-	err := c.fs.Parse(args)
-	if err != nil {
-		return fmt.Errorf("Parsing flags: %s", err)
+func FindEnvironmentConfigByName(name string, cfgs []*config.EnvironmentConfig) (*config.EnvironmentConfig, error) {
+	for _, cfg := range cfgs {
+		if cfg.Name == name {
+			return cfg, nil
+		}
 	}
-
-	args = c.fs.Args()
-	if len(args) != 1 {
-		return fmt.Errorf("Parsing arguments: %s", MissingEnvironmentArgError)
-	}
-	c.Environment = args[0]
-
-	return nil
+	return nil, fmt.Errorf("%w with name %q", EnvironmentNotFoundError, name)
 }
 
-func (c *Command) Run() error {
-	file, err := c.GetConfigFile()
-	if err != nil {
-		return fmt.Errorf("locating configuration file: %s", err)
+func GetVariablesFromEnvironmentConfig(client *op.Client, cfg *config.EnvironmentConfig) (provider.Variables, error) {
+	vars := make(provider.Variables)
+	for _, pcfg := range cfg.SecretConfigs {
+		other, err := secret.GetVariables(client, pcfg)
+		if err != nil {
+			return nil, err
+		}
+		vars.Merge(other)
 	}
-
-	cfg, err := config.LoadFile(file)
-	if err != nil {
-		return fmt.Errorf("loading configuration file: %s", err)
+	for _, pcfg := range cfg.ValueConfigs {
+		other, err := value.GetVariables(client, pcfg)
+		if err != nil {
+			return nil, err
+		}
+		vars.Merge(other)
 	}
-
-	env, err := cfg.FindEnvironment(c.Environment)
-	if err != nil {
-		return fmt.Errorf("finding environment: %s", err)
-	}
-
-	vars, err := env.Export()
-	if err != nil {
-		return fmt.Errorf("getting variables for environment: %s", err)
-	}
-
-	var tmpl = template.Must(template.New("").Parse(`
-{{- range $key, $val := . }}
-export {{ $key }}='{{ $val }}'
-{{- end }}
-`))
-
-	if err := tmpl.Execute(os.Stdout, vars); err != nil {
-		return fmt.Errorf("rendering source output: %s", err)
-	}
-
-	return nil
+	return vars, nil
 }
 
 func main() {
-	cmd := NewCommand()
-	if err := cmd.Parse(os.Args[1:]); err != nil {
-		fmt.Fprintf(cmd.fs.Output(), "[ERROR] %s\n", err)
-		cmd.fs.Usage()
-		os.Exit(1)
+	flag.Parse()
+	if len(flag.Args()) != 1 {
+		log.Fatal("fatal: no environment argument provided")
 	}
 
-	if err := cmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "[ERROR] %s\n", err)
-		os.Exit(1)
+	cfg, err := config.LoadFile(*configF)
+	if err != nil {
+		log.Fatalf("fatal: loading configuration %q: %s", *configF, err)
+	}
+
+	client := op.NewClient(cfg.ClientConfig)
+
+	ecfg, err := FindEnvironmentConfigByName(flag.Args()[0], cfg.EnvironmentConfigs)
+	if err != nil {
+		log.Fatalf("fatal: %s", err)
+	}
+
+	vars, err := GetVariablesFromEnvironmentConfig(client, ecfg)
+	if err != nil {
+		log.Fatalf("fatal: %s", err)
+	}
+
+	if err := ShellVariableExportTemplate.Execute(os.Stdout, vars); err != nil {
+		log.Fatalf("fatal: %s", err)
 	}
 }

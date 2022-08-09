@@ -1,0 +1,12 @@
+---
+environments:
+  - name: env-1
+    secrets:
+      - name: AWS_ACCESS_KEY_ID
+        secret: op://Private/AWS/access_key_id
+      - name: AWS_SECRET_ACCESS_KEY
+        secret: op://Private/AWS/secret_access_key
+
+    values:
+      - name: AWS_REGION
+        value: eu-central-1
