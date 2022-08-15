@@ -8,9 +8,29 @@ import (
 	"github.com/xinau/1penrc/internal/provider"
 )
 
+var DefaultConfig = Config{}
+
 type Config struct {
 	Name   string    `yaml:"name"`
 	Secret op.Secret `yaml:"secret"`
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	*c = DefaultConfig
+	// We want to set c to the defaults and then overwrite it with the input.
+	// To make unmarshal fill the plain data struct rather than calling UnmarshalYAML
+	// again, we have to hide it using a type indirection.
+	type plain Config
+	if err := unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+
+	if err := c.Validate(); err != nil {
+		return fmt.Errorf("validating config: %w", err)
+	}
+
+	return nil
 }
 
 func (cfg *Config) Validate() error {
@@ -24,10 +44,6 @@ func (cfg *Config) Validate() error {
 }
 
 func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("validating config: %w", err)
-	}
-
 	val, err := client.Read(cfg.Secret)
 	if err != nil {
 		return nil, err
