@@ -42,7 +42,7 @@ The environment can be sourced by referring to the environment by it's name. I.e
 source <(1penrc --config ./config.yaml example.com)
 ```
 
-For more information take a look at the manpages link:[1penrc(1)](./docs/man/1penrc.1.md) and [1penrc(5)](./docs/man/1penrc.5.md).
+For more information take a look at the manpages [1penrc(1)](./docs/man/1penrc.1.md) and [1penrc(5)](./docs/man/1penrc.5.md).
 
 ## DISCLAIMER
 
