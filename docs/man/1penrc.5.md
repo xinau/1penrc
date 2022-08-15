@@ -67,16 +67,16 @@ secret_access_key: <string>
 role_arn: <string>
 
 # Time-To-Live duration of the AWS session. 
-ttl: <duration | "1h" >
+[ ttl: <duration> | default "1h" ]
 
 # Reference to 1Password secret used as multi-factor authentication token. Only
 # applied if not empty.
-mfa_token: <secret | "" >
+[ mfa_token: <secret> | default "" ]
 
 # Serial number of the virtual multi-factor authentication device. If left
 # empty the serial number of the first device assigned to the current user
 # will be tried.
-mfa_serial_number: <string | "" >
+[ mfa_serial_number: <string> | default "" ]
 ```
 
 ### <secret_config>
