@@ -73,8 +73,9 @@ ttl: <duration | "1h" >
 # applied if not empty.
 mfa_token: <secret | "" >
 
-# Serial number of the virtual multi-factor authentication device. Required
-# when `mfa_token` isn't empty.
+# Serial number of the virtual multi-factor authentication device. If left
+# empty the serial number of the first device assigned to the current user
+# will be tried.
 mfa_serial_number: <string | "" >
 ```
 

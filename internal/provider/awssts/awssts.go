@@ -8,6 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"github.com/xinau/1penrc/internal/op"
@@ -72,6 +74,9 @@ type MultiFactorAuth struct {
 }
 
 func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
+	var creds aws.CredentialsProvider
+	creds = NewOnePasswordProvider(client, cfg)
+
 	var secret, serialNumber string
 	if cfg.HasMultiFactorAuth() {
 		data, err := client.Read(cfg.MultiFactorAuth.Token)
@@ -85,11 +90,24 @@ func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
 		}
 
 		serialNumber = cfg.MultiFactorAuth.SerialNumber
+		if serialNumber == "" {
+			device, err := FindVirtualMFADevice(
+				iam.New(iam.Options{
+					Credentials: creds,
+					Region:      "us-east-1",
+				}),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			serialNumber = *device.SerialNumber
+		}
 	}
 
-	creds := stscreds.NewAssumeRoleProvider(
+	creds = stscreds.NewAssumeRoleProvider(
 		sts.New(sts.Options{
-			Credentials: NewOnePasswordProvider(client, cfg),
+			Credentials: creds,
 			Region:      "us-east-1",
 		}),
 		cfg.RoleARN,
@@ -150,6 +168,28 @@ func (p *OnePasswordProvider) Retrieve(_ context.Context) (aws.Credentials, erro
 		SecretAccessKey: string(secret),
 		Source:          "1Password",
 	}, nil
+}
+
+func FindVirtualMFADevice(iamsvc *iam.Client) (*iamtypes.VirtualMFADevice, error) {
+	resp, err := iamsvc.ListVirtualMFADevices(context.TODO(), &iam.ListVirtualMFADevicesInput{
+		AssignmentStatus: iamtypes.AssignmentStatusTypeAssigned,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := iamsvc.GetUser(context.TODO(), &iam.GetUserInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dev := range resp.VirtualMFADevices {
+		if *dev.User.Arn == *user.User.Arn {
+			return &dev, nil
+		}
+	}
+
+	return nil, errors.New("zero matching virtual mfa devices")
 }
 
 func TOTPTokenProvider(secret string) func() (string, error) {
