@@ -1,4 +1,4 @@
-package awssts
+package otp
 
 import (
 	"crypto/hmac"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func ParseOTPSecretFromURL(data string) (string, error) {
+func ParseSecretFromURL(data string) (string, error) {
 	str := strings.TrimSpace(data)
 	uri, err := url.ParseRequestURI(str)
 	if err != nil {

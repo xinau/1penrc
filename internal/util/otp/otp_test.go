@@ -1,4 +1,4 @@
-package awssts
+package otp
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestParseOTPSecretFromURL(t *testing.T) {
+func TestParseSecretFromURL(t *testing.T) {
 	table := []struct {
 		name    string
 		data    string
@@ -21,7 +21,7 @@ func TestParseOTPSecretFromURL(t *testing.T) {
 
 	for _, test := range table {
 		t.Run(test.name, func(t *testing.T) {
-			seed, err := ParseOTPSecretFromURL(test.data)
+			seed, err := ParseSecretFromURL(test.data)
 			Assertf(t, errors.Is(err, test.wantErr), "got %s, expected %s", err, test.wantErr)
 			Assertf(t, seed == test.want, "got %q, expected %q", seed, test.want)
 		})

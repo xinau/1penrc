@@ -10,9 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	"github.com/xinau/1penrc/internal/duration"
 	"github.com/xinau/1penrc/internal/op"
 	"github.com/xinau/1penrc/internal/provider"
+	"github.com/xinau/1penrc/internal/util/duration"
+	"github.com/xinau/1penrc/internal/util/otp"
 )
 
 var DefaultConfig = Config{
@@ -78,7 +79,7 @@ func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
 			return nil, err
 		}
 
-		secret, err = ParseOTPSecretFromURL(string(data))
+		secret, err = otp.ParseSecretFromURL(string(data))
 		if err != nil {
 			return nil, err
 		}
@@ -153,6 +154,6 @@ func (p *OnePasswordProvider) Retrieve(_ context.Context) (aws.Credentials, erro
 
 func TOTPTokenProvider(secret string) func() (string, error) {
 	return func() (string, error) {
-		return GenerateTOTPCode(secret, time.Now())
+		return otp.GenerateTOTPCode(secret, time.Now())
 	}
 }
