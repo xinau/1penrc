@@ -63,7 +63,7 @@ func ParseExecErrorMessage(data []byte) (string, error) {
 
 type Secret string
 
-var SecretRe = regexp.MustCompile(`op:\/(\/[^\/]+)+`)
+var SecretRe = regexp.MustCompile(`^op:\/(\/[^\/\\]+)+$`)
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (s *Secret) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -72,12 +72,12 @@ func (s *Secret) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	if SecretRe.MatchString(plain) {
-		*s = Secret(plain)
-		return nil
+	if !SecretRe.MatchString(plain) {
+		return fmt.Errorf("secret %q must match regex `%s`", plain, SecretRe)
 	}
 
-	return fmt.Errorf("secret %q must match regex %s ", plain, SecretRe)
+	*s = Secret(plain)
+	return nil
 }
 
 func (c *Client) Read(secret Secret) ([]byte, error) {
