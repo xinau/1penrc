@@ -31,13 +31,13 @@ type Config struct {
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	*c = DefaultConfig
+func (cfg *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	*cfg = DefaultConfig
 	// We want to set c to the defaults and then overwrite it with the input.
 	// To make unmarshal fill the plain data struct rather than calling UnmarshalYAML
 	// again, we have to hide it using a type indirection.
 	type plain Config
-	if err := unmarshal((*plain)(c)); err != nil {
+	if err := unmarshal((*plain)(cfg)); err != nil {
 		return err
 	}
 
