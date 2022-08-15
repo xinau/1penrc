@@ -41,7 +41,7 @@ func (cfg *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	if err := c.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return fmt.Errorf("validating config: %w", err)
 	}
 
