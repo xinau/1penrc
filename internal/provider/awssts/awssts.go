@@ -24,6 +24,7 @@ type Config struct {
 	RoleARN         string            `yaml:"role_arn"`
 	AccessKeyID     op.Secret         `yaml:"access_key_id"`
 	SecretAccessKey op.Secret         `yaml:"secret_access_key"`
+	MultiFactorAuth MultiFactorAuth   `yaml:",inline"`
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -44,6 +45,10 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func (cfg *Config) HasMultiFactorAuth() bool {
+	return cfg.MultiFactorAuth.Token != ""
+}
+
 func (cfg *Config) Validate() error {
 	if cfg.RoleARN == "" {
 		return errors.New("role_arn can't be empty")
@@ -60,29 +65,59 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
-	svc := sts.New(sts.Options{
-		Credentials: NewOnePasswordProvider(client, cfg),
-		Region:      "us-east-1",
-	})
+type MultiFactorAuth struct {
+	Token        op.Secret `mfa_token`
+	SerialNumber string    `mfa_serial_number`
+}
 
-	creds, err := stscreds.NewAssumeRoleProvider(
-		svc, cfg.RoleARN,
+func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
+	var secret, serialNumber string
+	if cfg.HasMultiFactorAuth() {
+		data, err := client.Read(cfg.MultiFactorAuth.Token)
+		if err != nil {
+			return nil, err
+		}
+
+		secret, err = ParseOTPSecretFromURL(string(data))
+		if err != nil {
+			return nil, err
+		}
+
+		serialNumber = cfg.MultiFactorAuth.SerialNumber
+	}
+
+	creds := stscreds.NewAssumeRoleProvider(
+		sts.New(sts.Options{
+			Credentials: NewOnePasswordProvider(client, cfg),
+			Region:      "us-east-1",
+		}),
+		cfg.RoleARN,
 		func(opts *stscreds.AssumeRoleOptions) {
 			if cfg.TTL > 0 {
 				opts.Duration = time.Duration(cfg.TTL)
 			}
 		},
-	).Retrieve(context.TODO())
+		func(opts *stscreds.AssumeRoleOptions) {
+			if cfg.HasMultiFactorAuth() {
+				opts.SerialNumber = &serialNumber
+			}
+		},
+		func(opts *stscreds.AssumeRoleOptions) {
+			if cfg.HasMultiFactorAuth() {
+				opts.TokenProvider = TOTPTokenProvider(secret)
+			}
+		},
+	)
 
+	awscreds, err := creds.Retrieve(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
 	return provider.Variables{
-		"AWS_ACCESS_KEY_ID":     creds.AccessKeyID,
-		"AWS_SECRET_ACCESS_KEY": creds.SecretAccessKey,
-		"AWS_SESSION_TOKEN":     creds.SessionToken,
+		"AWS_ACCESS_KEY_ID":     awscreds.AccessKeyID,
+		"AWS_SECRET_ACCESS_KEY": awscreds.SecretAccessKey,
+		"AWS_SESSION_TOKEN":     awscreds.SessionToken,
 	}, nil
 }
 
@@ -114,4 +149,10 @@ func (p *OnePasswordProvider) Retrieve(_ context.Context) (aws.Credentials, erro
 		SecretAccessKey: string(secret),
 		Source:          "1Password",
 	}, nil
+}
+
+func TOTPTokenProvider(secret string) func() (string, error) {
+	return func() (string, error) {
+		return GenerateTOTPCode(secret, time.Now())
+	}
 }
