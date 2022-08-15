@@ -4,10 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/xinau/1penrc/internal/config"
 	"github.com/xinau/1penrc/internal/op"
