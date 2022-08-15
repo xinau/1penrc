@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/xinau/1penrc/internal/op"
+	"github.com/xinau/1penrc/internal/provider/awssts"
 	"github.com/xinau/1penrc/internal/provider/secret"
 	"github.com/xinau/1penrc/internal/provider/value"
 )
@@ -44,7 +45,9 @@ type Config struct {
 }
 
 type EnvironmentConfig struct {
-	Name          string           `yaml:"name"`
+	Name string `yaml:"name"`
+
+	AWSSTSConfigs []*awssts.Config `yaml:"aws_sts"`
 	SecretConfigs []*secret.Config `yaml:"secrets"`
 	ValueConfigs  []*value.Config  `yaml:"values"`
 }

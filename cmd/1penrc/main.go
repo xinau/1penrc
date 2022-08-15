@@ -12,6 +12,7 @@ import (
 	"github.com/xinau/1penrc/internal/config"
 	"github.com/xinau/1penrc/internal/op"
 	"github.com/xinau/1penrc/internal/provider"
+	"github.com/xinau/1penrc/internal/provider/awssts"
 	"github.com/xinau/1penrc/internal/provider/secret"
 	"github.com/xinau/1penrc/internal/provider/value"
 )
@@ -55,6 +56,13 @@ func FindEnvironmentConfigByName(name string, cfgs []*config.EnvironmentConfig) 
 
 func GetVariablesFromEnvironmentConfig(client *op.Client, cfg *config.EnvironmentConfig) (provider.Variables, error) {
 	vars := make(provider.Variables)
+	for _, pcfg := range cfg.AWSSTSConfigs {
+		other, err := awssts.GetVariables(client, pcfg)
+		if err != nil {
+			return nil, err
+		}
+		vars.Merge(other)
+	}
 	for _, pcfg := range cfg.SecretConfigs {
 		other, err := secret.GetVariables(client, pcfg)
 		if err != nil {

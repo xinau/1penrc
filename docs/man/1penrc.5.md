@@ -35,6 +35,10 @@ and how these are being obtained.
 # Environment name used for referencing.
 name: <string>
 
+# List of AWS STS provider configurations.
+aws_sts_configs:
+  [ - <aws_sts_configs> ... ]
+
 # List of secret provider configurations.
 secret_configs: 
   [ - <secret_config> ... ]
@@ -42,6 +46,28 @@ secret_configs:
 # List of value provider configurations.
 value_configs: 
   [ - <value_config> ... ]
+```
+
+### <aws_sts_config>
+
+The AWS STS provider block specifies an AWS role to assume
+and 1Password secrets to use for authentication.
+
+```yaml
+# Name of the environment variable.
+name: <string>
+
+# Reference to 1Password secret used as AWS access key id.
+access_key_id: <string>
+
+# Reference to 1Password secret used as AWS secret access key.
+secret_access_key: <string>
+
+# ARN of the role to assume.
+role_arn: <string>
+
+# Time-To-Live duration of the AWS session. 
+ttl: <duration | "1h" >
 ```
 
 ### <secret_config>

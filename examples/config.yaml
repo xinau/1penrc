@@ -10,3 +10,9 @@ environments:
     values:
       - name: AWS_REGION
         value: eu-central-1
+
+  - name: env-2
+    aws_sts_configs:
+      - access_key_id: op://Private/AWS/access_key_id
+        secret_access_key: op://Private/AWS/secret_access_key
+        role_arn: arn:aws:iam::012345678910:role/admin
