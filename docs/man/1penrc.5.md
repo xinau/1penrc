@@ -88,6 +88,9 @@ and 1Password secret to use as value of a variable.
 # Name of the environment variable.
 name: <string>
 
+# 1Password account name to use for signin.
+account: <string>
+
 # Reference to 1Password secret used as value.
 secret: <secret>
 ```

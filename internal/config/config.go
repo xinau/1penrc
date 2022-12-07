@@ -45,7 +45,8 @@ type Config struct {
 }
 
 type EnvironmentConfig struct {
-	Name string `yaml:"name"`
+	Name    string `yaml:"name"`
+	Account string `yaml:"account"`
 
 	AWSSTSConfigs []*awssts.Config `yaml:"aws_sts"`
 	SecretConfigs []*secret.Config `yaml:"secrets"`

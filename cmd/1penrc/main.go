@@ -80,6 +80,10 @@ func GetVariablesFromEnvironmentConfig(client *op.Client, cfg *config.Environmen
 	return vars, nil
 }
 
+var (
+	signinF = flag.Bool("signin", false, "Sign in to a 1Password account.")
+)
+
 func main() {
 	flag.Parse()
 	if len(flag.Args()) != 1 {
@@ -96,6 +100,12 @@ func main() {
 	ecfg, err := FindEnvironmentConfigByName(flag.Args()[0], cfg.EnvironmentConfigs)
 	if err != nil {
 		log.Fatalf("fatal: %s", err)
+	}
+
+	if *signinF {
+		if err := client.SignIn(ecfg.Account); err != nil {
+			log.Fatalf("fatal: signing into %s: %s", ecfg.Account, err)
+		}
 	}
 
 	vars, err := GetVariablesFromEnvironmentConfig(client, ecfg)

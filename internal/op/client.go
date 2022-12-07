@@ -28,6 +28,10 @@ func (c *Client) Exec(args []string) ([]byte, error) {
 	cmd := exec.Command(c.config.Executable)
 	cmd.Args = append(cmd.Args, args...)
 
+	if c.session != "" {
+		cmd.Args = append(cmd.Args, "--session", c.session)
+	}
+
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -88,4 +92,33 @@ func (c *Client) Read(secret Secret) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func (c *Client) SignIn(account string) error {
+	data, err := c.Exec([]string{
+		"signin", "--raw", "--account", account,
+	})
+	if err != nil {
+		return err
+	}
+
+	session, err := ParseSessionToken(data)
+	if err != nil {
+		return err
+	}
+
+	c.session = session
+	return nil
+}
+
+var SessionTokenRe = regexp.MustCompile(`^[0-9A-Za-z_-]{43}$`)
+
+var ParseSessionTokenError = errors.New("parsing session token")
+
+func ParseSessionToken(data []byte) (string, error) {
+	token := SessionTokenRe.Find(data)
+	if len(token) == 0 {
+		return "", fmt.Errorf("%w from %q", ParseSessionTokenError, data)
+	}
+	return string(token), nil
 }

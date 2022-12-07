@@ -6,7 +6,7 @@
 
 ## SYNOPSIS
 
-`1penrc [--config CONFIG_FILE] ENVIRONMENT`
+`1penrc [--config CONFIG_FILE] [--signin BOOL] ENVIRONMENT`
 
 ## DESCRIPTION
 
@@ -23,6 +23,10 @@ The output from 1penrc can than be used by shell builtins like `eval` or `source
 `--config CONFIG_FILE`
 
 :   Use alternate configuration file.
+
+`--signin BOOL`
+
+:   Sign in to a 1Password account.
 
 ## FILES
 
