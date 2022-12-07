@@ -75,7 +75,7 @@ type MultiFactorAuth struct {
 
 func GetVariables(client *op.Client, cfg *Config) (provider.Variables, error) {
 	var creds aws.CredentialsProvider
-	creds = NewOnePasswordProvider(client, cfg)
+	creds = aws.NewCredentialsCache(NewOnePasswordProvider(client, cfg))
 
 	var secret, serialNumber string
 	if cfg.HasMultiFactorAuth() {
